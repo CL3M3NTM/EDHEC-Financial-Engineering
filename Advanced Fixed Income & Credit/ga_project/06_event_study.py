@@ -1,5 +1,5 @@
 """
-Python Labs -- Trump Tariff Threats: Event Study
+Python Labs -- Trump Tariff Threats: Event Study --
 =================================================
 This module implements the event-study machinery requested by the
 assignment and is meant to be pasted into the provided notebook

@@ -1,4 +1,5 @@
 """
+Part Filippo
 Question 4.1 -- Shock the 10-year key rate by 50bps; impact on the Q2.1 spline
                  zero-coupon curve. Plot the difference.
 Question 4.2 -- KRD of a $1M, equally-weighted (across all 52 bonds) portfolio
