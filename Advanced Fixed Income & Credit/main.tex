@@ -352,6 +352,23 @@ exactly the level/curvature identifiability issue we had already flagged
 during estimation (Q3.1).
 
 %--------------------------------------------------------------------
+\question{Q4 --- Answer summary}
+
+\begin{center}
+\fbox{\parbox{0.94\textwidth}{\small
+\noindent\textbf{Q4.1.} A $+50$bps bump of the 10Y knot with the natural spline
+re-fitted raises the 10Y zero yield by exactly $50$bps and leaves the other
+four knots unchanged, but the shock is \emph{not} local: the curve ripples
+($+22.1$bps at 7Y, $-8.4$bps at 17Y, $-11.5$bps at 26Y).\\[3pt]
+\textbf{Q4.2.} $\text{KRD}_{10Y}=2.21$ years $(\Delta P=-\$10{,}813.14$, i.e.\
+$-1.08\%$ of NAV; $\text{DV01}=\$221.0$ central, $\$216.3$ one-sided).\\[3pt]
+\textbf{Q4.3.} The 52 individual zero-yield KRDs sum to $7.981$ years, exactly
+the portfolio's effective duration; the aggregated key-rate profile is
+$0.37/1.54/2.21/0.81/3.06$ years at 2/5/10/15/20Y.
+}}
+\end{center}
+
+%--------------------------------------------------------------------
 \question{Q4.1 --- Shocking the 10Y key rate}
 
 \textbf{Methodology.} The Q2.1 curve is a natural cubic spline through the
@@ -370,9 +387,10 @@ adjacent knots, and held flat beyond the outer knots.
 \begin{figure}[h]
 \centering
 \includegraphics[width=\textwidth]{q4_1_shock_10y.png}
-\caption{Left: base vs.\ 10Y-shocked Q2.1 spline. Centre: the shock $\Delta y(t)$
-from re-fitting the spline (red) vs.\ the triangular tent (dashed). Right: the
-five spline key-rate shocks. Shaded areas: extrapolated maturities ($<2$y, $>20$y).}
+\caption{Left: the curve shock $\Delta y(t)$ from re-fitting the spline (red)
+vs.\ the triangular tent (dashed); hollow markers are the four knots left
+unchanged. Right: the five spline key-rate shocks. Shaded areas: extrapolated
+maturities ($<2$y, $>20$y).}
 \end{figure}
 
 \textbf{Impact on the curve.} The shock is $+50$bps at 10Y and, by
@@ -382,14 +400,35 @@ tent, the spline response is \textbf{not local}:
 \item Between 5Y and 15Y it is \emph{wider} than the tent: $+22.1$bps at 7y
 and $+37.0$bps at 12y, versus $+20$ and $+30$bps for the linear ramp.
 \item Outside $[5,15]$y the cubic \emph{ripples} with alternating signs:
-about $-4$bps around 3--4y, $-8.4$bps at 17y, and $+8.4$bps at 23y.
-\item In the \textbf{extrapolated} region beyond 20y, the spline continues
-the last cubic polynomial (it is not flat), so the ripple grows to
-$-11.5$bps at 26y. The right panel shows that this effect is much stronger
-for the outer knots: a 20Y bump moves the 26y yield by about $+103$bps, a 15Y
-bump moves it by about $-44$bps, and a 2Y bump moves the 0.5y yield by
-$+79$bps.
+about $-3$ to $-4$bps between 3 and 4y, $-8.4$bps at 17y, and $+8.4$bps at 23y.
+\item In the \textbf{extrapolated} region beyond 20y the spline continues the
+last cubic polynomial --- the \texttt{CubicSpline} implementation extends the
+end cubic, it does not hold the curve flat --- so the ripple grows to
+$-11.5$bps at 26y. (A flat extension would put the 26Y yield at $5.95\%$
+instead of $6.35\%$ and would set this last contribution to zero; we keep the
+model-consistent extension and quantify the sensitivity in Q4.3.) The right
+panel shows that this effect is much stronger for the outer knots: a 20Y bump
+moves the 26y yield by about $+103$bps, a 15Y bump moves it by about
+$-44$bps, and a 2Y bump moves the 0.5y yield by $+79$bps.
 \end{itemize}
+
+\begin{table}[h]
+\centering
+\footnotesize
+\begin{tabular}{l *{11}{r}}
+\toprule
+Maturity (y) & 2 & 3 & 5 & 7 & 10 & 12 & 15 & 17 & 20 & 23 & 26 \\
+\midrule
+$\Delta y$, spline re-fit (bps) & 0.0 & $-2.9$ & 0.0 & $+22.1$ & $+50.0$ & $+37.0$ & 0.0 & $-8.4$ & 0.0 & $+8.4$ & $-11.5$ \\
+$\Delta y$, tent (bps)          & 0.0 & 0.0 & 0.0 & $+20.0$ & $+50.0$ & $+30.0$ & 0.0 & 0.0 & 0.0 & 0.0 & 0.0 \\
+\bottomrule
+\end{tabular}
+\caption{The $+50$bps 10Y shock at selected maturities: global spline re-fit
+vs.\ the local triangular tent. $\Delta y$ is zero at 5Y and 15Y because the
+tent is a straight line between the knots; it is zero at 2, 5, 15 and 20Y for
+the re-fit because those knots are not moved.}
+\end{table}
+
 In short, a key-rate shock is only as local as the curve model it is applied
 to. The tent is local by design, while a cubic spline spreads a single-node
 shock across the whole curve, most strongly where the curve is extrapolated
@@ -401,7 +440,12 @@ rather than interpolated.
 \textbf{Portfolio construction (assumption).} ``Equally invested'' is read as
 an equal \emph{dollar market value}: \$1,000,000/52 $\approx$ \$19{,}230.77
 in each bond, i.e.\ a face amount of
-$(\text{dollar amount}/\text{price})\times 100$ per bond.
+$(\text{dollar amount}/\text{price})\times 100$ per bond. The alternative
+reading, an equal \emph{face} amount (\$19{,}230.77 of face in each bond),
+would give a \$1.19m market value and $\text{KRD}_{10Y}=2.31$y: equal face
+overweights the cheap short bonds and underweights the expensive long ones,
+so it raises duration. We use equal market value, the standard reading of
+``equally invested'', and report the alternative in the robustness table.
 
 \textbf{Approach.}
 \begin{enumerate}[nosep]
@@ -427,15 +471,76 @@ $$\boxed{\Delta P_{10Y} = \$989{,}186.86 - \$1{,}000{,}000.00 = -\$10{,}813.14
 \;(-1.08\%\text{ of NAV}), \qquad \text{KRD}_{10Y} = 2.21\text{ years},
 \qquad \text{DV01}_{10Y} = \$221.0}$$
 The sign is as expected: a long bond portfolio loses value when yields rise.
-With the triangular tent instead, the loss would be $-\$10{,}123$
-(KRD $=2.06$y). The spline version is larger because its shock is wider
-around 10Y (Q4.1).
+The \$221.0 is a \emph{central}-difference DV01,
+$\text{DV01}=-(P(+h)-P(-h))/2\times10^{-4}$; the \emph{one-sided} $+50$bps
+P\&L implies \$216.26 per bp, so $\Delta P\neq-50\times\text{DV01}$. The
+\$4.8 per bp gap is the convexity term, which a 50bp move is large enough to
+reveal; we report the central figure because it is the one used to size the
+hedge in Q4.3.
+
+\textbf{What actually moves the number (robustness).} The KRD is essentially
+invariant to the pricing engine and materially sensitive to the \emph{shock
+design}, which is where most of the dispersion between reasonable
+implementations comes from:
+
+\begin{center}
+\small
+\begin{tabular}{lrr}
+\toprule
+Variant & $\Delta P$ for $+50$bps & $\text{KRD}_{10Y}$ (yrs) \\
+\midrule
+Spline re-fit, bootstrapped base (\textbf{reported}) & $-\$10{,}813$ & 2.210 \\
+Spline re-fit, spline-priced base & $-\$10{,}954$ & 2.234 \\
+Triangular tent, bootstrapped base & $-\$10{,}123$ & 2.061 \\
+Triangular tent, spline-priced base & $-\$10{,}232$ & 2.078 \\
+Single-point 10Y bump (10Y zero yield only) & $-\$1{,}169$ & 0.240 \\
+Equal-face portfolio, bootstrapped base & $-\$13{,}445$ & 2.307 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Every defensible convention puts the 10Y exposure between $2.0$ and $2.4$
+years; the spread is methodological, not arithmetic. We report $2.21$y
+because (i) Q4.1 asks for the impact on the curve \emph{estimated in Q2.1},
+which is the re-fitted spline, and (ii) pricing the base off the bootstrap
+keeps $P_0$ exactly at the $\$1$m actually invested, so the $-\$2{,}389$ Q2.2
+fitting residual cannot leak into the risk measure. The $0.24$y row shows the
+opposite extreme: applying the shock to the single 10Y zero yield only
+measures the partial duration of one cash-flow date, not a key-rate duration.
 
 %--------------------------------------------------------------------
 \question{Q4.3 --- Full key-rate duration profile}
 
-\textbf{(a) The five key rates.} We apply the same $+50$bps re-fit shock to
-each knot in turn.
+\textbf{(a) Each of the 52 zero-coupon yields individually (the literal
+reading).} ``All maturities'' is read as applying the same $+50$bps shock to
+each semi-annual zero yield (0.5y to 26y) \emph{on its own}, leaving the other
+51 unchanged. This version needs no curve model: only the discount factor of
+that single date moves, so to first order the KRD at date $t$ is
+$t\times\text{PV}(\text{CF}_t)/\text{NAV}$ (i.e.\
+$[t/(1+y_t/2)]\times\text{PV}(\text{CF}_t)/\text{NAV}$ in BEY terms).
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.8\textwidth]{q4_3_krd_by_maturity.png}
+\caption{KRD to each individual zero-coupon yield ($+50$bps). The 52 bars sum
+to 7.981 years, the portfolio's effective duration.}
+\end{figure}
+
+\textbf{Additivity check.} The 52 KRDs sum to $7.9809$ years, exactly the
+effective duration of a $\pm50$bps parallel shift: a parallel shift is the
+sum of the 52 single-date shocks, so this check needs no curve model and is
+free of cross terms.
+
+\textbf{Shape of the profile.} The exposure at date $t$ is roughly
+$t\times$(PV of the portfolio cash flow at $t$)/NAV. It rises with $t$ to a
+peak of $0.24$y at 10y, then \emph{drops abruptly} at 10.5y. Bonds maturing
+from Feb-2014 onwards carry high coupons (5.25--13.25\%) and mostly trade far
+above par (up to 174), so an equal \emph{dollar} allocation buys less face
+--- hence less principal --- at those dates. Beyond 10.5y the exposure
+declines slowly as discounting erodes the PV of distant cash flows.
+
+\textbf{(b) The five key rates (aggregated view).} We apply the same $+50$bps
+re-fit shock to each knot in turn.
 
 \begin{table}[h]
 \centering
@@ -457,7 +562,8 @@ Sum & $-37{,}704$ & 7.992 & 799.2 & & $-38{,}872$ & 7.979 \\
 \end{tabular}
 \caption{Key-rate exposures of the \$1M equally-weighted portfolio
 ($+50$bps shock at each knot). The parallel-shift effective duration is
-7.981 years.}
+7.981 years. KRD and DV01 are central differences; the P\&L column is
+one-sided, so P\&L $\neq -50\times$DV01.}
 \end{table}
 
 \begin{figure}[h]
@@ -474,54 +580,58 @@ parallel shock. The gap comes from convexity and cross terms, which are
 largest for the spline because its extrapolated shocks reach about 100bps.
 This is why we report central-difference KRDs.
 
-\textbf{(b) Each of the 52 zero-coupon yields individually.} ``All
-maturities'' can also be read as shocking each semi-annual zero yield
-(0.5y to 26y) on its own. This version needs no curve model: only the
-discount factor of that one date changes.
+\textbf{Robustness: the 15Y/20Y split is an extrapolation effect.} The Q2.1
+spline is pinned by data only up to 20Y; beyond that, the end cubic amplifies
+the effect of a 50bps bump at 20Y to $+103$bps at 26Y, and the effect of a
+50bps bump at 15Y to $-50$bps at 24.5Y. That is what moves duration between
+the two buckets:
 
-\begin{figure}[h]
-\centering
-\includegraphics[width=0.8\textwidth]{q4_3_krd_by_maturity.png}
-\caption{KRD to each individual zero-coupon yield ($+50$bps). The 52 bars sum
-to 7.981 years, the portfolio's effective duration.}
-\end{figure}
+\begin{center}
+\small
+\begin{tabular}{lrrrrrr}
+\toprule
+ & 2Y & 5Y & 10Y & 15Y & 20Y & Sum \\
+\midrule
+End cubic (reported)  & 0.367 & 1.541 & 2.210 & 0.810 & 3.064 & 7.992 \\
+Held flat beyond 20Y  & 0.180 & 1.619 & 2.109 & 1.850 & 0.652 & 6.411 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Holding the curve flat would move the split to 1.85y (15Y) and 0.65y (20Y),
+but the five KRDs would then sum to 6.41y instead of the portfolio's 7.98y
+effective duration, because the shocks would no longer sum to a parallel
+shift: the cash flows beyond 20Y, about 1.57y of duration, would carry no
+key-rate exposure at all. We keep the model-consistent extension --- it is
+the only one under which the key-rate decomposition is complete --- and
+present the 15Y/20Y split as model risk rather than as a tradable exposure.
 
 \textbf{Interpretation.}
 \begin{itemize}[nosep]
-\item All exposures are negative in P\&L terms (positive durations), as
-expected for a long-only portfolio.
-\item \emph{Per maturity} (panel b), the exposure at date $t$ is roughly
-$t\times$(PV of the portfolio cash flow at $t$)/NAV. It rises with $t$ up to
-a peak of 0.24y at 10y, then \emph{drops abruptly} at 10.5y. Bonds maturing
-from Feb-2014 onwards carry high coupons (5.25--13.25\%) and mostly trade far
-above par (up to 174), so an equal \emph{dollar} allocation buys less face and hence less
-principal at those dates. Beyond 10.5y, the exposure declines slowly as
-discounting erodes the PV of distant cash flows.
-\item \emph{Per key rate} (panel a), each KRD aggregates the per-maturity
-exposures weighted by that key rate's shock profile. With the tent, the
-profile is smooth (0.53 / 1.45 / 2.06 / 1.69 / 2.25y). The 20Y bucket is
-large because it also absorbs all maturities from 20 to 26y.
-\item With the spline, the profile is distorted by the non-local shocks
-seen in Q4.1. The 15Y KRD falls to 0.81y because a 15Y bump pushes the
-20--26y yields \emph{down} by up to 44bps, offsetting the loss around 15Y.
-Conversely, the 20Y KRD rises to 3.06y because a 20Y bump pushes the
-extrapolated long end \emph{up} by as much as 103bps. Likewise, the 2Y bump
-partly offsets itself through the $-8$bps ripple at 5--10y.
+\item All exposures are positive durations (negative P\&L), as expected for
+a long-only portfolio.
+\item With the tent, the profile is smooth (0.53 / 1.45 / 2.06 / 1.69 /
+2.25y) and follows the cash-flow intuition; the 20Y bucket is the largest
+because it also absorbs every maturity from 20 to 26y.
+\item With the spline re-fit, the ripples of Q4.1 redistribute risk. The 2Y
+KRD falls to 0.37y (vs.\ 0.53y): the 2Y bump pushes 5--10y yields \emph{down}
+by up to 8.4bps, worth $+\$1{,}063$ on the 5--10y cash flows, which more than
+offsets the extra $-\$219$ caused by its larger short-end shock ($+79$bps at
+0.5y vs.\ $+50$bps for the tent). The 15Y/20Y split moves as explained above.
+The total is unchanged, which is the point.
 \item \textbf{Practical implication.} The choice of curve model is itself a
 source of hedging risk. A hedge sized on spline KRDs would put far more
 weight on 20Y and far less on 15Y than a hedge sized on tent KRDs, even
 though both imply the same total duration.
 \end{itemize}
 
-\textbf{Illustrative KRD hedge.} To neutralise all five spline key-rate
-DV01s, we solve a $5\times5$ linear system for the face amounts of the five
-bonds maturing exactly at the key dates. The solution is short \$93.6k of the
-Aug-2005 (2Y), short \$199.5k of the Aug-2008 (5Y), short \$211.5k of the
-Aug-2013 (10Y), long \$19.4k of the Aug-2018 (15Y), and short \$445.6k of the
-Aug-2023 (20Y), for a hedge market value of $-\$968$k (a funding leg is
-needed and is not modelled). The P\&L of a $+50$bps parallel shift falls from
-$-\$38{,}594$ to $+\$57$. The residuals for the individual key-rate shocks
-are at most \$606 (20Y), coming from second-order (convexity) effects.
+\textbf{Illustrative KRD hedge (beyond the question).} Neutralising the five
+spline key-rate DV01s with the five bonds maturing exactly at the key dates
+requires short \$93.6k (Aug-2005), short \$199.5k (Aug-2008), short \$211.5k
+(Aug-2013), \emph{long} \$19.4k (Aug-2018) and short \$445.6k (Aug-2023), for
+a hedge market value of $-\$968$k (the funding leg is not modelled). The
+$+50$bps parallel P\&L falls from $-\$38{,}594$ to $+\$57$; the individual
+key-rate residuals are at most \$606 (20Y), from second-order convexity.
 
 \newpage
 %====================================================================

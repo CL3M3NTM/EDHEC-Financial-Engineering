@@ -35,6 +35,14 @@ Methodology & documented assumptions:
     (ii) KRD in YEARS, KRD_k = -(P_up - P_dn) / (2 * P * h) with h = 50bps
     (central difference, which removes most of the convexity error, so the
     KRDs add up to the effective duration); (iii) DV01 ($ per 1bp).
+    NOTE the DV01 reported is the CENTRAL-difference one; the one-sided P&L
+    implies a smaller $/bp because a 50bps move is large enough for convexity
+    to matter (both are printed, so the text can quote them consistently).
+  - Robustness: outputs/q4_2_robustness.csv recomputes the 10Y KRD under every
+    defensible convention (spline vs tent shock, bootstrapped vs spline-priced
+    base, cubic vs flat vs linear extrapolation, single-point bump, equal-face
+    portfolio); outputs/q4_3_extrapolation_sensitivity.csv does the same for
+    the five key-rate KRDs beyond the 20y knot.
   - Yields are Bond-Equivalent Yields (semi-annual compounding), as in Q1.1.
 """
 from pathlib import Path
@@ -45,6 +53,31 @@ from scipy.interpolate import CubicSpline
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+
+# ---------------------------------------------------------------- style ----
+# Figures are generated at the width they will occupy in the PDF
+# (\textwidth = 16.4cm = 6.46in), so nothing is downscaled and the labels stay
+# legible in print. dpi=300 gives ~300 dpi at final size.
+RED, GREY, BAND = '#9E1B32', '#4D4D4D', '#B0B0B0'
+SHOCK_COLORS = ['#7F7F7F', '#4C72B0', '#9E1B32', '#DD8452', '#55A868']
+plt.rcParams.update({
+    'font.family': 'DejaVu Sans',
+    'font.size': 8,
+    'axes.titlesize': 8.5,
+    'axes.labelsize': 8,
+    'xtick.labelsize': 7,
+    'ytick.labelsize': 7,
+    'legend.fontsize': 7,
+    'axes.grid': True,
+    'axes.grid.axis': 'y',
+    'grid.color': '#DDDDDD',
+    'grid.linewidth': 0.6,
+    'axes.axisbelow': True,
+    'axes.edgecolor': GREY,
+    'axes.linewidth': 0.7,
+    'xtick.color': GREY,
+    'ytick.color': GREY,
+})
 
 BASE = Path(__file__).resolve().parent
 OUT = BASE / 'outputs'
@@ -85,6 +118,12 @@ def disc(y):
 NAV_TARGET = 1_000_000.0
 face = (NAV_TARGET / n_bonds) / bonds['Price'].values * 100.0   # face held per bond
 port_cf = (face / 100.0) @ CF                                   # portfolio cash flow per period
+
+# Alternative reading of "equally invested": equal FACE in each bond ($1M/52 of
+# face, i.e. a market value of $1.19M). Kept only for the robustness table: it
+# overweights the cheap short bonds relative to the expensive long ones.
+face_eq = np.full(n_bonds, NAV_TARGET / n_bonds)
+port_cf_eq = (face_eq / 100.0) @ CF
 
 def nav(y):
     return port_cf @ disc(y)
@@ -136,33 +175,75 @@ def krd(dy, h=SHOCK):
             'KRD_years': -(up - dn) / (2 * P0 * h),
             'DV01': -(up - dn) / (2 * h) * 1e-4}
 
+def krd_from(base_y, dy, h=SHOCK, pcf_local=None):
+    """Same KRD, but around an arbitrary base curve and/or portfolio cash flow.
+    Used only by the robustness table: it lets us vary the pricing base
+    (bootstrapped vs spline) and the portfolio definition (equal $MV vs face)."""
+    cf = port_cf if pcf_local is None else pcf_local
+    P = cf @ disc(base_y)
+    up, dn = cf @ disc(base_y + dy), cf @ disc(base_y - dy)
+    return {'P0': P, 'PnL_up': up - P,
+            'KRD_years': -(up - dn) / (2 * P * h),
+            'DV01': -(up - dn) / (2 * h) * 1e-4}
+
+def flat_ext(dy):
+    """Hold the spline yield FLAT outside [2,20]y: the shock is zero there."""
+    out = dy.copy()
+    out[(t < KNOTS[0]) | (t > KNOTS[-1])] = 0.0
+    return out
+
+def linear_ext(j):
+    """Extend the spline shock beyond the outer knots along the boundary slope."""
+    bumped = knot_y.copy(); bumped[j] += SHOCK
+    s_up = CubicSpline(KNOTS, bumped, bc_type='natural')
+    s_b = CubicSpline(KNOTS, knot_y, bc_type='natural')
+    out = np.zeros_like(t)
+    inside = (t >= KNOTS[0]) & (t <= KNOTS[-1])
+    out[inside] = s_up(t[inside]) - s_b(t[inside])
+    lo, hi = t < KNOTS[0], t > KNOTS[-1]
+    out[lo] = (s_up(KNOTS[0], 1) - s_b(KNOTS[0], 1)) * (t[lo] - KNOTS[0])
+    out[hi] = (s_up(KNOTS[-1], 1) - s_b(KNOTS[-1], 1)) * (t[hi] - KNOTS[-1])
+    return out
+
 def ix(years):
     return int(np.where(t == years)[0][0])
 
 # ================= Q4.1: shock the 10Y key rate, impact on the Q2.1 curve =================
 j10 = KNOTS.index(10)
 d10 = spl[j10]
-fig, axes = plt.subplots(1, 3, figsize=(17, 5))
-axes[0].plot(t, y_spline * 100, color='#4D4D4D', label='Base Q2.1 spline')
-axes[0].plot(t, (y_spline + d10) * 100, color='#9E1B32', label='Spline refit, 10Y knot +50bps')
-axes[0].set_xlabel('Maturity (years)'); axes[0].set_ylabel('Zero yield, BEY (%)')
-axes[0].set_title('Q4.1 -- Curve level: base vs. 10Y-shocked'); axes[0].legend(frameon=False)
-
-axes[1].plot(t, d10 * 1e4, color='#9E1B32', label='Spline refit (Q2.1 model)')
-axes[1].plot(t, tnt[j10] * 1e4, color='#4D4D4D', ls='--', label='Triangular tent (comparison)')
-axes[1].axhline(0, color='black', lw=0.6); axes[1].axvline(10, color='grey', ls=':', lw=1)
-axes[2].set_title('Q4.1 -- All five spline key-rate shocks')
-for j, k in enumerate(KNOTS):
-    axes[2].plot(t, spl[j] * 1e4, label=f'{k}Y knot')
-    axes[2].axvline(k, color='grey', ls=':', lw=0.6)
-axes[2].axhline(0, color='black', lw=0.6)
-axes[2].set_xlabel('Maturity (years)'); axes[2].set_ylabel('Yield change (bps)'); axes[2].legend(frameon=False, fontsize=8)
-axes[1].set_xlabel('Maturity (years)'); axes[1].set_ylabel('Yield change (bps)')
-axes[1].set_title('Q4.1 -- Difference (shocked - base)'); axes[1].legend(frameon=False)
+fig, axes = plt.subplots(1, 2, figsize=(6.45, 2.75), layout='constrained')
 for a in axes:
-    a.axvspan(0, 2, color='grey', alpha=0.08); a.axvspan(20, 26, color='grey', alpha=0.08)
-fig.tight_layout()
-fig.savefig(OUT / 'q4_1_shock_10y.png', dpi=150)
+    a.axvspan(0, 2, color=BAND, alpha=0.18, lw=0, zorder=0)
+    a.axvspan(20, 26, color=BAND, alpha=0.18, lw=0, zorder=0)
+    a.axhline(0, color='black', lw=0.6, zorder=1)
+    a.set_xlim(0, 26.5)
+    a.set_xlabel('Maturity (years)')
+
+# (a) the 10Y shock: spline re-fit vs the local tent
+ax = axes[0]
+ax.plot(t, d10 * 1e4, color=RED, lw=1.6, label='Spline re-fit (Q2.1 model)', zorder=3)
+ax.plot(t, tnt[j10] * 1e4, color=GREY, lw=1.1, ls='--', label='Triangular tent (comparison)', zorder=2)
+ax.plot([k for k in KNOTS if k != 10], np.zeros(len(KNOTS) - 1), 'o', ms=3.4, mfc='white',
+        mec=GREY, mew=0.8, ls='none', label='Knots left unchanged', zorder=4)
+ax.text(10.4, 51.5, '+50bps', fontsize=7, color=RED, ha='left', va='center')
+ax.text(25.6, -15.5, '-11.5bps at 26y', fontsize=7, color=RED, ha='right', va='center')
+ax.set_ylabel('Yield change (bps)')
+ax.set_title('(a) 10Y shock: spline re-fit vs tent')
+ax.set_ylim(-22, 57)
+ax.legend(frameon=False, loc='lower left', handlelength=1.5, borderaxespad=0.2)
+
+# (b) all five key-rate shocks
+ax = axes[1]
+for j, k in enumerate(KNOTS):
+    ax.plot(t, spl[j] * 1e4, color=SHOCK_COLORS[j], lw=1.7 if k == 10 else 1.0,
+            label=f'{k}Y', zorder=3 if k == 10 else 2)
+    ax.axvline(k, color='#999999', ls=':', lw=0.6, zorder=1)
+ax.set_ylabel('Yield change (bps)')
+ax.set_title('(b) The five key-rate shocks')
+ax.set_ylim(-62, 120)
+ax.legend(frameon=False, ncol=5, loc='upper center', handlelength=1.2,
+          columnspacing=1.0, handletextpad=0.4, borderaxespad=0.2)
+fig.savefig(OUT / 'q4_1_shock_10y.png', dpi=300)
 
 lo, hi = d10[t < 5] * 1e4, d10[t > 20] * 1e4
 print("Q4.1 -- impact of +50bps on the 10Y knot (spline refit):")
@@ -181,8 +262,32 @@ print("Q4.2 -- approach: equal-$ portfolio of the 52 bonds, repriced off the boo
 print(f"  Base NAV ${P0:,.2f}; shocked NAV ${P0 + r['PnL_up']:,.2f}")
 print(f"  KRD_10Y: P&L = ${r['PnL_up']:,.2f} ({r['PnL_up']/P0*1e4:.1f} bps of NAV) for +50bps; "
       f"KRD = {r['KRD_years']:.3f} years; DV01 = ${r['DV01']:,.2f} per bp")
+dv01_one_sided = -r['PnL_up'] / SHOCK * 1e-4
+print(f"  DV01 basis: central ${r['DV01']:,.2f}/bp vs one-sided ${dv01_one_sided:,.2f}/bp "
+      f"(convexity gap ${r['DV01']-dv01_one_sided:,.2f}); P&L(+50bps) != -50 x central DV01")
 rt = krd(tent_shock(j10))
 print(f"  [tent shock instead: P&L = ${rt['PnL_up']:,.2f}, KRD = {rt['KRD_years']:.3f}y]\n")
+
+# ================= Q4.2 robustness: what actually moves the number =================
+dy_10_only = np.zeros_like(t)
+dy_10_only[ix(10)] = SHOCK
+variants = [
+    ('Spline refit, bootstrapped base (REPORTED)', krd_from(y_boot, d10)),
+    ('Spline refit, spline-priced base', krd_from(y_spline, d10)),
+    ('Tent, bootstrapped base', krd_from(y_boot, tnt[j10])),
+    ('Tent, spline-priced base', krd_from(y_spline, tnt[j10])),
+    ('Spline refit, flat extension outside [2,20]y', krd_from(y_boot, flat_ext(d10))),
+    ('Spline refit, linear extension outside [2,20]y', krd_from(y_boot, linear_ext(j10))),
+    ('Single-point 10Y bump (10Y zero yield only)', krd_from(y_boot, dy_10_only)),
+    ('Equal-FACE portfolio, bootstrapped base', krd_from(y_boot, d10, pcf_local=port_cf_eq)),
+]
+rob = pd.DataFrame([{'Variant': v, 'Base_NAV_$': a['P0'], 'PnL_up_$': a['PnL_up'],
+                     'KRD_years': a['KRD_years'], 'DV01_$': a['DV01']} for v, a in variants])
+rob.to_csv(OUT / 'q4_2_robustness.csv', index=False)
+print("Q4.2 robustness -- the KRD is robust to the pricing engine, not to the shock design:")
+print(rob.round(3).to_string(index=False))
+print(f"  Range of defensible conventions: {rob['KRD_years'].iloc[:4].min():.2f}-"
+      f"{rob['KRD_years'].iloc[:4].max():.2f}y; single-point bump is a partial duration, not a KRD.\n")
 
 # ================= Q4.3 (a): the 5 key rates =================
 rows = []
@@ -206,19 +311,34 @@ print(f"  Sum of one-sided key-rate P&Ls = ${krd_df['Spline_PnL_$'].sum():,.2f} 
 # tolerance: spline shocks reach ~100bps in the extrapolated zone, so a small non-linearity remains
 assert abs(krd_df['Spline_KRD_years'].sum() - eff_dur) < 0.05
 
+# --- where the 15Y/20Y split comes from: sensitivity to the >20y extension -----
+sens = pd.DataFrame([{'KeyRate': k,
+                      'EndCubic_KRD': krd(spl[j])['KRD_years'],
+                      'HeldFlat_KRD': krd(flat_ext(spl[j]))['KRD_years']}
+                     for j, k in enumerate(KNOTS)])
+sens.to_csv(OUT / 'q4_3_extrapolation_sensitivity.csv', index=False)
+print("\nQ4.3 -- sensitivity of the key-rate profile to the >20y extension:")
+print(sens.round(3).to_string(index=False))
+print(f"  sums: end cubic {sens['EndCubic_KRD'].sum():.4f}y vs flat {sens['HeldFlat_KRD'].sum():.4f}y "
+      f"(effective duration {eff_dur:.4f}y).")
+print("  Holding the curve flat removes ~1.57y of cash-flow duration beyond 20y from the key-rate")
+print("  buckets, so the flat KRDs no longer sum to duration: the end-cubic extension is what makes")
+print("  the five shocks sum to a parallel shift, and it is kept for that reason.\n")
+
 x = np.arange(5); w = 0.38
-fig2, ax2 = plt.subplots(figsize=(9, 5.2))
-ax2.bar(x - w/2, krd_df['Spline_KRD_years'], w, color='#9E1B32', label='Spline refit (Q2.1 model)')
-ax2.bar(x + w/2, krd_df['Tent_KRD_years'], w, color='#4D4D4D', label='Triangular tent (comparison)')
+fig2, ax2 = plt.subplots(figsize=(4.65, 3.0), layout='constrained')
+ax2.bar(x - w/2, krd_df['Spline_KRD_years'], w, color=RED, label='Spline re-fit (Q2.1)')
+ax2.bar(x + w/2, krd_df['Tent_KRD_years'], w, color=GREY, label='Triangular tent')
 ax2.set_xticks(x); ax2.set_xticklabels([f'{k}Y' for k in KNOTS])
-ax2.set_ylabel('Key-rate duration (years)'); ax2.legend(frameon=False)
-ax2.set_title('Q4.3 -- Key-rate duration profile of the $1M equally-weighted portfolio')
+ax2.set_ylabel('Key-rate duration (years)')
+ax2.set_ylim(0, krd_df[['Spline_KRD_years', 'Tent_KRD_years']].to_numpy().max() * 1.20)
+ax2.set_title('Key-rate duration by key rate')
+ax2.legend(frameon=False, loc='upper left', handlelength=1.2, borderaxespad=0.3)
 for xi, v in zip(x - w/2, krd_df['Spline_KRD_years']):
-    ax2.text(xi, v, f'{v:.2f}', ha='center', va='bottom', fontsize=8)
+    ax2.text(xi, v + 0.03, f'{v:.2f}', ha='center', va='bottom', fontsize=6.5, color=RED)
 for xi, v in zip(x + w/2, krd_df['Tent_KRD_years']):
-    ax2.text(xi, v, f'{v:.2f}', ha='center', va='bottom', fontsize=8)
-fig2.tight_layout()
-fig2.savefig(OUT / 'q4_3_krd_profile.png', dpi=150)
+    ax2.text(xi, v + 0.03, f'{v:.2f}', ha='center', va='bottom', fontsize=6.5, color=GREY)
+fig2.savefig(OUT / 'q4_3_krd_profile.png', dpi=300)
 print("Saved outputs/q4_3_krd_profile.png\n")
 
 # ================= Q4.3 (b): each of the 52 zero yields individually =================
@@ -233,14 +353,22 @@ assert abs(krd52['KRD_years'].sum() - eff_dur) < 0.01
 print(f"Q4.3(b) -- sum of the 52 zero-yield KRDs = {krd52['KRD_years'].sum():.4f}y (= parallel effective duration {eff_dur:.4f}y)")
 print(f"  largest single-maturity KRD: {krd52['KRD_years'].max():.3f}y at {krd52.loc[krd52['KRD_years'].idxmax(),'Years']:.1f}y")
 
-fig3, ax3 = plt.subplots(figsize=(10, 5))
-ax3.bar(krd52['Years'], krd52['KRD_years'], width=0.4, color='#9E1B32')
-for k in KNOTS:
-    ax3.axvline(k, color='grey', ls=':', lw=0.7)
+fig3, ax3 = plt.subplots(figsize=(5.17, 2.8), layout='constrained')
+ax3.bar(krd52['Years'], krd52['KRD_years'], width=0.42, color=RED, zorder=2)
+for i, k in enumerate(KNOTS):
+    ax3.axvline(k, color='#999999', ls=':', lw=0.7, zorder=1,
+                label='Key-rate knots' if i == 0 else None)
+ax3.set_xticks([0, 2, 5, 10, 15, 20, 25])
+ax3.set_xlim(0, 26.5)
+ax3.set_ylim(0, krd52['KRD_years'].max() * 1.14)
 ax3.set_xlabel('Zero-coupon maturity (years)'); ax3.set_ylabel('KRD (years)')
-ax3.set_title('Q4.3 -- KRD to each zero-coupon yield individually (+50bps)')
-fig3.tight_layout()
-fig3.savefig(OUT / 'q4_3_krd_by_maturity.png', dpi=150)
+ax3.set_title('KRD by zero-coupon maturity')
+ax3.legend(frameon=False, loc='upper right', handlelength=1.2, borderaxespad=0.3)
+ax3.text(krd52.loc[krd52['KRD_years'].idxmax(), 'Years'],
+         krd52['KRD_years'].max(), f"{krd52['KRD_years'].max():.3f}",
+         fontsize=6.5, color=GREY, ha='center', va='bottom',
+         bbox=dict(facecolor='white', edgecolor='none', pad=0.6))
+fig3.savefig(OUT / 'q4_3_krd_by_maturity.png', dpi=300)
 print("Saved outputs/q4_3_krd_by_maturity.png\n")
 
 # ================= Extra: KRD hedge with 5 bonds =================
@@ -254,17 +382,16 @@ A = np.array([[bond_dv01_vs_keyrate(i, j) for i in hedge_idx] for j in range(5)]
 target = np.array([krd(spl[j])['DV01'] for j in range(5)])
 hedge_face = -np.linalg.solve(A, target) * 100.0         # face to hold in each hedge bond (negative = short)
 hedge_cf = (hedge_face / 100.0) @ CF[hedge_idx]
-print("Hedge example -- face amounts of the 5 bonds maturing at 2/5/10/15/20y that zero the 5 key-rate DV01s:")
+print("Hedge example -- face amounts of the bonds maturing at 2/5/10/15/20y that zero the 5 key-rate DV01s:")
 for k, i, f in zip(KNOTS, hedge_idx, hedge_face):
-    print(f"  {bonds.loc[i,'Maturity'].date()} ({k}Y, {bonds.loc[i,'Coupon']}%): face ${f:,.0f}")
-print(f"  Hedge portfolio market value: ${(hedge_face/100*bonds.loc[hedge_idx,'Price'].values).sum():,.0f} "
-      "(a funding position is needed to make the hedge self-financing -- not modelled).")
-print("  Residual P&L for +50bps shocks (unhedged -> hedged):")
+    print(f"  {k:>2}Y ({bonds.loc[i,'Maturity'].date()}, {bonds.loc[i,'Coupon']:>5}%): face ${f:>10,.0f}")
+print(f"  Hedge market value ${(hedge_face/100*bonds.loc[hedge_idx,'Price'].values).sum():,.0f} "
+      "(funding leg not modelled). Residual P&L (unhedged -> hedged):")
+res = []
 for j, k in enumerate(KNOTS):
     dy = spl[j]
     unh = nav(y_boot + dy) - P0
-    hed = unh + hedge_cf @ (disc(y_boot + dy) - disc(y_boot))
-    print(f"    {k}Y key rate: ${unh:,.0f} -> ${hed:,.0f}")
+    res.append((f"{k}Y", unh, unh + hedge_cf @ (disc(y_boot + dy) - disc(y_boot))))
 unh = nav(y_boot + SHOCK) - P0
-hed = unh + hedge_cf @ (disc(y_boot + SHOCK) - disc(y_boot))
-print(f"    Parallel +50bps: ${unh:,.0f} -> ${hed:,.0f}")
+res.append(("Parallel", unh, unh + hedge_cf @ (disc(y_boot + SHOCK) - disc(y_boot))))
+print("  " + " | ".join(f"{k}: ${u:,.0f} -> ${h:,.0f}" for k, u, h in res))
