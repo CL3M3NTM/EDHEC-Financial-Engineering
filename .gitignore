@@ -1,2 +1,3 @@
 .DS_Store
 data/fred/api_key.py
+**/api_key.py
