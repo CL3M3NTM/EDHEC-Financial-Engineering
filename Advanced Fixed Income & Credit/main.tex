@@ -55,17 +55,14 @@ Settlement date: \textbf{August 15, 2003}. Exhibit 1 lists 52 Treasury coupon
 bonds whose maturities fall on successive semi-annual dates (Feb 15 / Aug 15)
 from 2004 to 2029 with no gaps, i.e.\ exactly one bond at each of the nodes
 $t=0.5,1.0,\dots,26.0$ years. This allows the classic \emph{successive
-substitution} bootstrap: because each bond introduces exactly one new unknown
-discount factor, we solve sequentially from the shortest to the longest
-maturity.
+substitution} bootstrapping method.
 
 \textbf{Compounding convention.} Exhibit 4's footnote states explicitly that
 Deutsche Bank's own model yields are \emph{Bond-Equivalent Yields} (BEY),
 i.e.\ twice the semi-annual compounded yield. Since U.S.\ Treasuries pay
 semi-annual coupons, we derive our own zero-coupon yields in the identical
 BEY convention throughout, so that every comparison against the DB model in
-Q1.2 is apples-to-apples (a continuously-compounded convention would have
-introduced a small but systematic bias in one direction).
+Q1.2 is apples-to-apples.
 $$\text{BEY} = 2\left(D^{-1/k}-1\right), \qquad D = \text{discount factor to period } k \text{ (6-month steps)}.$$
 
 %--------------------------------------------------------------------
@@ -79,10 +76,10 @@ D_k = \frac{P_k - \frac{c}{2}\sum_{j=1}^{k-1}D_j}{\frac{c}{2}+100}.$$
 Solved in order of increasing maturity, using only already-known $D_j$, $j<k$.
 
 \textbf{Validation.} Our bootstrapped curve matches Deutsche Bank's own
-Exhibit 4 model yields \emph{exactly} at 2Y (1.873\%) and 10Y (4.711\%) ---
-precisely the maturities the case identifies as DB's own calibration points
-for its three-factor model. This is strong internal validation that both the
-bootstrap algorithm and the BEY convention choice are correct.
+Exhibit 4 model yields \emph{exactly} at 2Y (1.873\%) and 10Y (4.711\%) 
+i.e.\ the maturities the case identifies as DB's own calibration points
+for its three-factor model. This is strong internal validation they were 
+appropriate methods to use.
 
 \begin{table}[h]
 \centering
@@ -105,8 +102,8 @@ Maturity (y) & Discount Factor & Zero Yield (BEY) \\
 \caption{Bootstrapped zero-coupon curve, selected maturities (full 52-point curve in \texttt{q1\_bootstrapped\_curve.csv}).}
 \end{table}
 
-The curve shape is the standard concave, upward-sloping Treasury curve of
-the period, flattening from about 15Y onward and showing a very slight
+The curve shape is the standard concave, upward-sloping Treasury curve over
+the period, flattening from about 15Y onward and a very slight
 downward drift between 20Y and 26Y.
 
 %--------------------------------------------------------------------
@@ -116,7 +113,8 @@ downward drift between 20Y and 26Y.
 bootstrapped (market-implied) yield is \emph{higher} than DB's model yield,
 the bond's market price is below the model's ``fair'' price $\Rightarrow$ the
 bond is \textbf{cheap} $\Rightarrow$ \textbf{BUY}. If the market yield is
-\emph{lower}, the bond is \textbf{rich} $\Rightarrow$ \textbf{SELL}.
+\emph{lower}, the bond is \textbf{expensive} $\Rightarrow$ \textbf{SELL}.
+We keep a $\pm 1 bps$ margin where the signal remains as "fair".
 
 \begin{table}[h]
 \centering
@@ -125,7 +123,7 @@ bond is \textbf{cheap} $\Rightarrow$ \textbf{BUY}. If the market yield is
 \toprule
 Maturity (y) & DB Model Yield & Market Yield (Q1.1) & Diff (bps) & Signal \\
 \midrule
-1  & 1.2443\% & 1.1930\% & $-5.13$ & SELL (rich) \\
+1  & 1.2443\% & 1.1930\% & $-5.13$ & SELL (expensive) \\
 2  & 1.8727\% & 1.8727\% & $+0.00$ & fair (DB calibration point) \\
 3  & 2.4110\% & 2.4711\% & $+6.01$ & \textbf{BUY (cheap)} \\
 4  & 2.9665\% & 3.0084\% & $+4.19$ & \textbf{BUY (cheap)} \\
@@ -137,7 +135,7 @@ Maturity (y) & DB Model Yield & Market Yield (Q1.1) & Diff (bps) & Signal \\
 10 & 4.7107\% & 4.7107\% & $-0.00$ & fair (DB calibration point) \\
 15 & 5.7160\% & 5.7167\% & $+0.07$ & fair \\
 20 & 5.9517\% & 5.9513\% & $-0.04$ & fair \\
-25 & 5.9315\% & 5.9128\% & $-1.87$ & SELL (rich) \\
+25 & 5.9315\% & 5.9128\% & $-1.87$ & SELL (expensive) \\
 \bottomrule
 \end{tabular}
 \caption{Market vs. DB model comparison and trading signals.}
@@ -145,36 +143,36 @@ Maturity (y) & DB Model Yield & Market Yield (Q1.1) & Diff (bps) & Signal \\
 
 \textbf{Pattern.} The belly of the curve (3--9 years) is uniformly
 \emph{cheap} relative to the DB model, by 1--6 bps, suggesting a BUY
-candidate basket in that region. The very short end (1Y) and the long end
-(25Y) look \emph{rich}. The 2Y, 10Y, 15Y and 20Y points are essentially fair
-by construction or coincidence (2Y and 10Y are DB's own calibration anchors).
+signal in that region. The very short end (1Y) and the long end
+(25Y) look \emph{expensive}. The 2Y, 10Y, 15Y and 20Y points are essentially fair
+by construction (calibration anchors) or coincidence.
 
 %--------------------------------------------------------------------
 \question{Q1.3 --- Is this risk-free arbitrage?}
 
-No. Although the strategy is directional and model-based, it is \textbf{not}
+Although the strategy is directional and model-based, it is \textbf{not}
 a riskless arbitrage, for several reasons:
 
 \begin{itemize}[leftmargin=1.2em]
 \item \textbf{Model risk.} The ``mispricing'' is only a mispricing relative
-to Deutsche Bank's own three-factor curve model. If the model is
+to Deutsche Bank's three-factor model. If the model is
 mis-specified (wrong number of factors, wrong functional form, stale
-calibration), the signal is simply wrong --- there is no model-independent
-proof that the belly of the curve is ``truly'' cheap.
+calibration), the signal could simply be wrong. 
 \item \textbf{Convergence/timing risk.} Even if the model is correctly
 specified on average, there is no guarantee \emph{when}, or even
 \emph{whether}, market yields converge back toward the model yields within
-the trader's holding horizon. The position carries interim mark-to-market
+the trader's holding horizon. The position carries mark-to-market
 risk.
 \item \textbf{No riskless, capital-structure-free payoff.} A true arbitrage
 requires a replicating, self-financing portfolio with a knowable, riskless
-terminal payoff (e.g.\ a textbook cash-and-carry). Here the ``trade'' is an
-outright directional bet on convergence, funded at some financing rate, with
-basis risk between the position and any hedge.
+terminal payoff. Here the ``trade'' is a directional bet on convergence, 
+funded at some financing rate, with basis risk (signal on a Zero Coupon 
+vs. trading on Coupon Bonds) between the position and any hedge.
 \item \textbf{Curve risk while waiting.} Between trade inception and
 convergence, the \emph{whole} curve can move (parallel shifts, twists), and
-unless the position is duration/key-rate hedged, those moves swamp the small
+unless the position is duration/key-rate hedged, those moves can override the small
 model-implied edge of a few basis points.
+
 \end{itemize}
 In short, this is a \textbf{relative-value} trade: a model-informed bet with
 positive expected value under the trader's own beliefs about the model's
@@ -252,7 +250,7 @@ signal built on it is unreliable almost by definition.
 substantive finding. The original Q1.2 ``cheap'' signal in 6--9Y was driven,
 at least in part, by the \emph{same} idiosyncratic legacy-bond noise
 identified in Q2.1's residual analysis. Once the spline smooths through
-that local bump, the belly of the curve actually looks \emph{rich}, not
+that local bump, the belly of the curve actually looks \emph{expensive}, not
 cheap, relative to the DB model.
 \end{enumerate}
 
