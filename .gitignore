@@ -3,3 +3,10 @@ data/fred/api_key.py
 **/api_key.py
 __pycache__/
 *.pyc
+*.aux
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.synctex.gz
+*.toc

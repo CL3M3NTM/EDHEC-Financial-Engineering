@@ -1,0 +1,73 @@
+pos,event_type,sign,date,term,description,overlap_other_type,near_fomc,cluster_head
+514,trump_action,1,2017-01-23,first_term,TPP Withdrawal announced,False,False,True
+575,trump_action,1,2017-04-20,first_term,Commerce Dept. Steel dumping investigation launched,False,False,True
+764,trump_action,1,2018-01-22,first_term,Solar panel and washing machine tariffs (30% and 20%),False,False,True
+791,trump_action,1,2018-03-01,first_term,"Steel and Aluminum Tariffs Announced (25% steel, 10% aluminum)",False,False,True
+792,country_response,1,2018-03-02,first_term,EU threatens retaliation on steel/aluminum tariffs,False,False,False
+806,trump_action,1,2018-03-22,first_term,China Tariffs Announced ($60B worth of Chinese goods),False,True,True
+808,country_response,1,2018-03-26,first_term,"India raises tariffs on US almonds, apples",False,False,False
+812,country_response,1,2018-04-02,first_term,China retaliatory tariffs announced ($3B US goods),False,False,False
+813,trump_action,1,2018-04-03,first_term,"China tariff list published ($50B in goods, 25%)",False,False,False
+814,country_response,1,2018-04-04,first_term,"China escalates retaliation ($50B US goods, 25%)",False,False,False
+854,country_response,1,2018-05-31,first_term,Canada announces retaliatory tariffs ($16.6B),False,False,True
+857,country_response,1,2018-06-05,first_term,"Mexico announces retaliatory tariffs (steel, pork, bourbon)",False,False,False
+865,trump_action,1,2018-06-15,first_term,China Tariffs List Published (25% on $50B of goods),False,False,True
+866,country_response,1,2018-06-16,first_term,China announces retaliatory tariffs ($50B),False,False,False
+869,country_response,1,2018-06-21,first_term,"Turkey raises tariffs on US goods (rice, cars, alcohol)",False,False,False
+870,country_response,1,2018-06-22,first_term,EU implements retaliatory tariffs ($3.2B US goods),False,False,False
+876,country_response,1,2018-07-01,first_term,Canada implements steel/aluminum retaliation,False,False,True
+879,country_response,1,2018-07-06,first_term,China implements retaliatory tariffs ($34B),True,False,False
+879,trump_action,1,2018-07-06,first_term,First China tariffs take effect ($34B),True,False,False
+899,country_response,1,2018-08-03,first_term,China tariffs on $60B US goods (5-25%),False,False,True
+913,country_response,1,2018-08-23,first_term,China retaliates on $16B US goods,True,False,True
+913,trump_action,1,2018-08-23,first_term,Second tranche China tariffs ($16B),True,False,True
+929,trump_action,1,2018-09-17,first_term,China Tariffs Phase 2 Announced (10% on additional $200B),False,False,True
+930,country_response,1,2018-09-18,first_term,China announces tariffs on $60B US goods,False,False,False
+934,trump_action,1,2018-09-24,first_term,China tariffs Phase 2 implemented ($200B at 10%),True,False,False
+934,country_response,1,2018-09-24,first_term,China implements tariffs on $60B US goods,True,False,False
+962,country_response,1,2018-11-02,first_term,EU complains to WTO about US auto tariff threats,False,False,True
+1085,trump_action,1,2019-05-05,first_term,China Tariff Escalation Tweet (25% on $200B),False,False,True
+1089,trump_action,1,2019-05-10,first_term,China tariffs raised to 25% ($200B worth),False,False,False
+1090,country_response,1,2019-05-13,first_term,China raises tariffs on $60B US goods to 25%,False,False,False
+1146,trump_action,1,2019-08-01,first_term,China Tariffs Phase 3 Announced (10% on remaining $300B),False,True,True
+1148,country_response,1,2019-08-05,first_term,China allows yuan to weaken past 7/USD,False,False,False
+1162,country_response,1,2019-08-23,first_term,China announces tariffs on $75B US goods,True,False,True
+1162,trump_action,1,2019-08-23,first_term,China tariff escalation tweet (existing and new tariffs),True,False,True
+1168,trump_action,1,2019-09-01,first_term,China tariffs on $300B begin (15% on $112B),True,False,True
+1168,country_response,1,2019-09-01,first_term,China implements tariffs on $75B US goods,True,False,True
+1239,trump_action,-1,2019-12-15,first_term,Planned China tariff increase postponed (trade deal progress),False,False,True
+1242,country_response,-1,2019-12-19,first_term,China announces tariff reductions (Phase One),False,False,False
+1259,trump_action,-1,2020-01-15,first_term,Phase One China trade deal signed,False,False,True
+2513,trump_action,1,2025-01-20,second_term,Inauguration - pledged immediate trade system overhaul,False,False,True
+2514,trump_action,1,2025-01-22,second_term,Executive order directing tariff review within 60 days,False,False,False
+2522,trump_action,1,2025-02-01,second_term,"National emergency declared - 25% tariffs on Canada/Mexico, 10% on China (IEEPA)",False,False,True
+2527,trump_action,1,2025-02-10,second_term,"Steel/aluminum tariff expansion - ended exemptions, raised aluminum to 25%",False,False,False
+2530,trump_action,1,2025-02-13,second_term,Announced reciprocal tariffs on all countries with trade barriers (April implementation),False,False,False
+2535,trump_action,1,2025-02-21,second_term,Presidential memorandum investigating digital service taxes for retaliation,False,False,False
+2542,country_response,1,2025-03-04,second_term,China retaliates with 10-15% tariffs on US agricultural imports,True,False,True
+2542,trump_action,1,2025-03-04,second_term,"Chinese ""fentanyl tariff"" raised to 20% (USMCA tariffs suspended)",True,False,True
+2543,country_response,1,2025-03-05,second_term,"Mexico announces retaliatory measures (5-20% on pork, cheese, steel)",False,False,False
+2551,country_response,1,2025-03-15,second_term,China adds 15 US companies to export control list,False,False,True
+2563,trump_action,1,2025-04-02,second_term,National emergency on trade deficit - 10% baseline tariff on all countries,False,False,True
+2565,country_response,1,2025-04-04,second_term,EU announces $100B counter-tariffs if 30% rate implemented,False,False,False
+2566,country_response,1,2025-04-06,second_term,China escalates to 145% tariffs on US goods (US at 145% on China),True,False,False
+2566,trump_action,1,2025-04-05,second_term,Universal 10% tariff takes effect on nearly all imports,True,False,False
+2568,trump_action,-1,2025-04-09,second_term,90-day pause of reciprocal tariffs (ex-China),False,False,False
+2569,country_response,1,2025-04-10,second_term,Brazil passes reciprocity bill allowing tariff retaliation,False,False,False
+2584,trump_action,1,2025-05-02,second_term,China/Hong Kong exemption removed again,False,False,True
+2590,trump_action,-1,2025-05-12,second_term,US-China Geneva agreement: tariffs cut for 90 days,False,False,True
+2614,country_response,1,2025-06-15,second_term,Canada provinces boycott US spirits amid trade war,False,False,True
+2625,trump_action,-1,2025-07-02,second_term,Trade deal announced with Vietnam,False,False,True
+2627,trump_action,-1,2025-07-07,second_term,Reciprocal tariffs delayed to August 1,False,False,False
+2627,trump_action,1,2025-07-04,second_term,One Big Beautiful Bill Act - eliminates de minimis exemption (2027),False,False,False
+2628,trump_action,1,2025-07-08,second_term,"Letters sent to 14 countries (Japan, S.Korea) threatening tariffs without deals",False,False,False
+2632,country_response,1,2025-07-12,second_term,"Japan threatens ""all options on table"" for tariff response",False,False,False
+2637,country_response,1,2025-07-20,second_term,EU confirms 30% counter-tariffs on $100B US goods,False,False,False
+2642,trump_action,-1,2025-07-27,second_term,US-EU framework deal (15% tariff ceiling),False,False,False
+2644,trump_action,-1,2025-07-30,second_term,Cathode copper exempted from tariffs,False,True,False
+2649,trump_action,1,2025-08-06,second_term,"Tariff rates finalized: Canada 35%, Mexico 30%, China 34%, EU 20%, Japan 24%",False,False,False
+2652,country_response,1,2025-08-10,second_term,Brazil president vows reciprocation but holds back on steel/aluminum,False,False,False
+2653,country_response,1,2025-08-12,second_term,"China continues agricultural tariff escalation (chicken, wheat, corn 15%)",False,False,False
+2656,trump_action,1,2025-08-15,second_term,"Brazil hit with 50% tariffs, India total 50%, various Asian countries 25-36%",True,False,False
+2656,country_response,1,2025-08-15,second_term,EU-Canada-China coordination on $330B retaliatory measures,True,False,False
+2666,trump_action,1,2025-08-29,second_term,De minimis exemption ended early (originally scheduled 2027),False,False,True
