@@ -634,214 +634,332 @@ $+50$bps parallel P\&L falls from $-\$38{,}594$ to $+\$57$; the individual
 key-rate residuals are at most \$606 (20Y), from second-order convexity.
 
 \newpage
+%Paolo
 %====================================================================
 \section{Part II --- Python Labs: US Treasury Yield Curve Reaction to Trump Tariff Threats}
 
 \subsection*{Data, event set and conventions}
-\textbf{Data.} Daily US Treasury constant-maturity yields (FRED \texttt{DGS3MO}
-to \texttt{DGS30}), downloaded with the course helper \texttt{fred.py}:
-2015-01-02 to 2025-08-01, i.e.\ 2{,}647 trading days (Q1).
-\textbf{Code:} script \texttt{06\_event\_study.py} in the
-\texttt{ga\_project} folder. One run reproduces every number, table and
-figure of this part (outputs prefixed \texttt{pl\_}). The original notebook
-is in \texttt{ga\_project/python\_labs}.
 
-\textbf{Events.} The notebook's \texttt{trump\_actions} and
-\texttt{country\_responses} dictionaries give 75 events (36 Trump actions, 39
-foreign responses). Inside the sample they map to \textbf{58 distinct trading
-days} at horizon $-30$ (51 at $+30$): some events fall on the same day (a
-Trump action and a foreign response on 2018-07-06, 2018-08-23, 2018-09-24,
-2019-08-23, 2019-09-01 and 2025-03-04, while the weekend events of 5 and 6 April 2025 both map to Monday 7 April), and the six events after 2025-08-01
-are dropped because the FRED download stops on that date.
+\textbf{Data.} Daily US Treasury constant-maturity yields for ten maturities,
+from 3 months to 30 years (FRED series \texttt{DGS3MO} to \texttt{DGS30}),
+downloaded with the course helper \texttt{fred.py}. The sample used in Q1 runs from 2 January 2015 to 1 August 2025, i.e.\
+2{,}647 trading days. Yields are in percent; all results are reported in basis
+points (bp).
 
-\textbf{Methodology (as required).} For each event day $t$ and horizon
-$k\in[-30,+30]$ trading days we compute $y_{t+k}-y_t$, average it across
-events, and subtract the same-horizon average change over all non-event days
-(more than 30 trading days away from any event):
-$$\text{AC}(k)=\overline{y_{t+k}-y_t}^{\,\text{events}}-\overline{y_{t+k}-y_t}^{\,\text{non-events}}.$$
-Level $=$ 10Y, slope $=$ 10Y$-$2Y, curvature $=2\times$5Y$-$2Y$-$10Y.
+\textbf{Code.} A single run of \nolinkurl{ga_project/06_event_study.py}
+reproduces every number, table and figure of this part (output files are
+prefixed \texttt{pl\_}). The original course notebook is in
+\nolinkurl{ga_project/python_labs/}.
 
-\textbf{Reading the results (our convention).} Because $\text{AC}(k)$ is
-measured relative to day 0, a \emph{positive} value at $k<0$ means that yields
-were \emph{higher} before the event, i.e.\ they \emph{fell} into it. To avoid
-this sign trap, the tables report three windows, all as ``abnormal yield
-change over the window'' (positive $=$ yields rose):
-pre $[-30,0]=-\text{AC}(-30)$, announcement $[-1,+1]=\text{AC}(+1)-\text{AC}(-1)$,
-post $[0,+30]=\text{AC}(+30)$.
+\textbf{Event set.} The notebook's \texttt{trump\_actions} and
+\texttt{country\_responses} dictionaries contain 75 events: 36 Trump actions
+and 39 foreign responses (Python silently keeps only the last entry of each
+duplicated date key, so two listed events are lost). Mapping the events to
+trading days:
+\begin{itemize}[leftmargin=1.2em,nosep]
+\item 8 events fall after 1 August 2025, when the FRED download ends, and are
+dropped;
+\item 16 events fall on a weekend or a market holiday and are moved to the
+next trading day (e.g.\ the events of Saturday 5 and Sunday 6 April 2025 both
+map to Monday 7 April);
+\item 9 trading days carry two events. On 8 of them a Trump action and a
+foreign response share the same day (e.g.\ 2018-07-06, 2019-08-23,
+2025-03-04); on the ninth, the 4 July 2025 holiday collapses onto the
+7 July action.
+\end{itemize}
+The remaining 67 events therefore correspond to \textbf{58 distinct event
+days}, each counted once. All 58 have a full pre-event window; 51 have a full
+30-day post-event window, because the last events of the sample are followed
+by fewer than 30 trading days of data.
 
-\textbf{Assumptions.} (A1) Business days $=$ trading days in the FRED data;
-weekend/holiday events move to the next trading day. (A2) ``Reaction of
-targeted countries'' (Q1.3) is measured on the \emph{US} curve on the dates
-of the foreign responses, since only US yields are provided. (A3) Q1 uses the
-notebook's event list and sample unchanged; all corrections are in Q2.1.
+\textbf{Methodology (as required by the assignment).} Let $t_1,\dots,t_N$ be
+the event days and $y_t$ a yield, or one of the three curve factors
+\[
+\text{level}=y_{10},\qquad
+\text{slope}=y_{10}-y_{2},\qquad
+\text{curvature}=2\,y_{5}-y_{2}-y_{10},
+\]
+where $y_m$ is the $m$-year yield. For each horizon $k=-30,\dots,+30$ trading
+days, the abnormal change is
+\[
+\mathrm{AC}(k)
+=\frac{1}{N}\sum_{i=1}^{N}\bigl(y_{t_i+k}-y_{t_i}\bigr)
+-\frac{1}{|\mathcal{B}_k|}\sum_{s\in\mathcal{B}_k}\bigl(y_{s+k}-y_{s}\bigr),
+\]
+where $\mathcal{B}_k$ is the set of non-event days $s$ such that both $s$ and
+$s+k$ lie more than 30 trading days away from every event. The first term is
+the average change around the events; the second is the ``normal'' change
+over the same horizon.
+
+\textbf{Reading the results.} Because $\mathrm{AC}(k)$ is measured relative
+to the event day, a \emph{positive} value at $k<0$ means that yields were
+\emph{higher} before the event, i.e.\ they \emph{fell} into it. To avoid this
+sign trap, every table reports three windows as the abnormal change in yield
+\emph{over the window} (positive $=$ yields rose):
+\begin{itemize}[leftmargin=1.2em,nosep]
+\item \textbf{pre-event} $[-30,0]$: $\;y_{t}-y_{t-30}$, i.e.\ $-\mathrm{AC}(-30)$;
+\item \textbf{announcement} $[-1,+1]$: $\;y_{t+1}-y_{t-1}$, i.e.\ $\mathrm{AC}(+1)-\mathrm{AC}(-1)$;
+\item \textbf{post-event} $[0,+30]$: $\;y_{t+30}-y_{t}$, i.e.\ $\mathrm{AC}(+30)$.
+\end{itemize}
+
+\textbf{Assumptions.}
+\begin{itemize}[leftmargin=1.2em,nosep]
+\item[(A1)] Business days are the trading days present in the FRED data;
+weekend and holiday events move to the next trading day.
+\item[(A2)] The ``reaction of targeted countries'' (Q1.3) is measured on the
+\emph{US} curve on the dates of the foreign responses, since only US yields
+are provided.
+\item[(A3)] Q1 uses the notebook's event list, sample and baseline unchanged;
+all corrections are made in Q2.1.
+\item[(A4)] To judge magnitudes we also report the \emph{raw} average change
+around the events with its cross-sectional standard error (s.e.). These
+s.e.\ treat events as independent; since windows overlap, they overstate
+precision and are only a first indication.
+\end{itemize}
 
 %--------------------------------------------------------------------
 \question{Q1.1 --- Market reaction to Trump's announcements and actions}
 
-\begin{figure}[h]
+\begin{figure}[!htbp]
 \centering
 \includegraphics[width=\textwidth]{pl_q11_q13_paths.png}
 \caption{Abnormal change relative to the event day (bp), assignment
-methodology. Left: Trump actions (Q1.1). Right: foreign responses (Q1.3).
-A line that falls from left to right means yields fell through the window.}
+methodology. Left: Trump actions (Q1.1). Right: foreign responses (Q1.3). A
+line falling from left to right means that yields fell through the window.}
+\label{fig:q11}
 \end{figure}
 
-\begin{table}[h]
+\begin{table}[!htbp]
 \centering
 \small
 \begin{tabular}{lrrrrr}
 \toprule
-Window (bp) & 3M & 2Y & 5Y & 10Y & 30Y \\
+ & 3M & 2Y & 5Y & 10Y & 30Y \\
 \midrule
-pre $[-30,0]$   & $-6.4$ & $-10.2$ & $-11.6$ & $-11.1$ & $-9.5$ \\
-announcement $[-1,+1]$ & $-0.5$ & $-1.6$ & $-0.8$ & $-0.2$ & $+0.6$ \\
-post $[0,+30]$  & $-7.1$ & $-14.0$ & $-13.6$ & $-9.5$ & $-4.5$ \\
+\multicolumn{6}{l}{\emph{Panel A. Abnormal change (assignment methodology), bp}} \\
+\addlinespace[2pt]
+Pre-event $[-30,0]$     & $-6.4$ & $-10.2$ & $-11.6$ & $-11.1$ & $-9.5$ \\
+Announcement $[-1,+1]$  & $-0.5$ & $-1.6$  & $-0.8$  & $-0.2$  & $+0.6$ \\
+Post-event $[0,+30]$    & $-7.1$ & $-14.0$ & $-13.6$ & $-9.5$  & $-4.5$ \\
+\addlinespace
+\multicolumn{6}{l}{\emph{Panel B. Post-event window decomposed: abnormal $=$ raw $-$ baseline, bp}} \\
+\addlinespace[2pt]
+Raw change around events & $+1.4$ & $-6.8$ & $-7.4$ & $-3.5$ & $+1.0$ \\
+\quad (s.e.)             & $(3.1)$ & $(5.3)$ & $(5.5)$ & $(5.2)$ & $(4.8)$ \\
+Non-event baseline       & $+8.5$ & $+7.2$ & $+6.2$ & $+5.9$ & $+5.5$ \\
 \bottomrule
 \end{tabular}
-\caption{Trump actions: abnormal yield change (32 event days at $-30$, 28 at $+30$).}
+\caption{Trump actions: 32 event days in the pre-event and announcement
+windows, 28 in the post-event window. Panel B may not add up exactly because
+of rounding.}
+\label{tab:q11}
 \end{table}
 
 \textbf{Discussion.}
 \begin{itemize}[leftmargin=1.2em,nosep]
-\item \textbf{No visible announcement effect.} Around the event itself the
-curve barely moves ($-1.6$bp on the 2Y, $-0.2$bp on the 10Y over $[-1,+1]$),
-small compared with a daily standard deviation of about 5bp.
-\item \textbf{Large drift on both sides.} Yields fall by about 10--12bp in
-the 30 days \emph{before} the events and by a further 5--14bp \emph{after}
-them. Taken at face value, the market reads tariffs as a negative growth
-shock: flight to quality into Treasuries and higher odds of Fed cuts, which
-is why the front end (2Y, $-14.0$bp post) falls the most.
-\item \textbf{But the shape is suspicious.} A genuine reaction to news should
-be a jump around day 0, not a smooth 60-day trend that starts a month before
-the announcement. The pattern is more consistent with events clustering in
-falling-rate periods (2019 easing cycle, 2025 cut expectations) than with a
-tariff effect. Q2.1 tests this directly.
+\item \textbf{No announcement effect.} Over $[-1,+1]$ the curve barely moves:
+$-1.6$\,bp on the 2Y and $-0.2$\,bp on the 10Y, against raw s.e.\ of about
+1.2--1.5\,bp. Nothing is distinguishable from zero.
+\item \textbf{Large abnormal declines on both sides of the event.} Taken at
+face value, Panel~A says that yields fall by 10--12\,bp (2Y to 10Y) in the
+30 days \emph{before} the events and by a further 5--14\,bp \emph{after}
+them, most at the front end. The textbook reading is a negative growth shock:
+flight to quality into Treasuries and higher odds of Fed cuts, which lowers
+the 2Y most.
+\item \textbf{But most of it is the baseline.} Panel~B shows that the raw
+change after the events is small and statistically zero: $-3.5$\,bp on the
+10Y (s.e.\ 5.2) and $+1.0$\,bp on the 30Y. The ``abnormal'' declines come
+mainly from subtracting a non-event baseline of $+5.5$ to $+8.5$\,bp per 30 days.
+That baseline is computed on days far from any event, i.e.\ mostly 2015--16
+and 2020--24, a period dominated by the 2022--23 hiking cycle, when yields
+were rising.
+\item \textbf{The shape confirms it.} A reaction to news would be a jump
+around day 0; Figure~\ref{fig:q11} instead shows a smooth 60-day ramp that
+starts a month before the announcements. This is the signature of a trend
+difference between event periods (2018--19, 2025) and the baseline period,
+not of a tariff effect.
 \end{itemize}
+\textbf{Answer.} With the required methodology, Treasury yields appear to fall
+around Trump's tariff actions (about $-10$ to $-14$\,bp at the 2Y--5Y over
+30 days). However, there is no announcement effect, and the post-event decline
+is driven by the choice of baseline rather than by the events. Q2.1 tests this
+directly.
 
 %--------------------------------------------------------------------
 \question{Q1.2 --- Level, slope and curvature}
 
-\begin{figure}[h]
+\begin{figure}[!htbp]
 \centering
 \includegraphics[width=\textwidth]{pl_q12_lsc.png}
 \caption{Abnormal change of level, slope and curvature (bp): Trump actions
-(red) vs.\ all 75 events (dashed).}
+(red) vs.\ all events (dashed).}
 \end{figure}
 
-\begin{table}[h]
+\begin{table}[!htbp]
 \centering
 \small
 \begin{tabular}{lrrrcrrr}
 \toprule
  & \multicolumn{3}{c}{Trump actions} & & \multicolumn{3}{c}{All events} \\
 \cmidrule{2-4}\cmidrule{6-8}
-Window (bp) & Level & Slope & Curv. & & Level & Slope & Curv. \\
+Abnormal change, bp & Level & Slope & Curv. & & Level & Slope & Curv. \\
 \midrule
-pre $[-30,0]$          & $-11.1$ & $-1.0$ & $-1.8$ & & $-11.5$ & $-1.3$ & $-2.9$ \\
-announcement $[-1,+1]$ & $-0.2$  & $+1.4$ & $+0.1$ & & $-0.2$  & $+1.3$ & $-0.1$ \\
-post $[0,+30]$         & $-9.5$  & $+4.5$ & $-3.7$ & & $-7.7$  & $+2.0$ & $-4.0$ \\
+Pre-event $[-30,0]$    & $-11.1$ & $-1.0$ & $-1.8$ & & $-11.5$ & $-1.3$ & $-2.9$ \\
+Announcement $[-1,+1]$ & $-0.2$  & $+1.4$ & $+0.1$ & & $-0.2$  & $+1.3$ & $-0.1$ \\
+Post-event $[0,+30]$   & $-9.5$  & $+4.5$ & $-3.7$ & & $-7.7$  & $+2.0$ & $-4.0$ \\
+\addlinespace
+\emph{Raw post-event change (s.e.)} & $-3.5$ & $+3.3$ & $-4.4$ & & & & \\
+ & $(5.2)$ & $(1.9)$ & $(1.2)$ & & & & \\
 \bottomrule
 \end{tabular}
-\caption{Abnormal change of the three curve components.}
+\caption{Level ($=$ 10Y), slope ($=$ 10Y $-$ 2Y) and curvature
+($=2\times$5Y $-$ 2Y $-$ 10Y).}
+\label{tab:q12}
 \end{table}
 
 \textbf{Discussion.}
 \begin{itemize}[leftmargin=1.2em,nosep]
-\item \textbf{Level} carries almost all of the movement and replicates Q1.1
-(it is the 10Y by construction, a redundancy we address with a PCA level in
-Q2.1).
-\item \textbf{Slope.} After Trump actions the curve \emph{steepens}
-($+1.4$bp at the announcement, $+4.5$bp over 30 days) while the level falls:
-a \emph{bull steepening}, i.e.\ the front end rallies more than the long end.
-This is the typical signature of markets pricing a more accommodative Fed: the
-2Y is anchored to expected policy rates, while the 10Y also carries inflation
-risk from tariffs and a term premium.
-\item \textbf{Curvature} falls ($-3.7$bp post): the 5Y belly rallies more
-than the average of the 2Y and 10Y wings, consistent with the market pricing
-cuts concentrated over the next 2--5 years rather than permanently lower rates.
-\item The pattern is the same for all events and slightly weaker, because
-foreign responses (Q1.3) contribute little post-event movement.
+\item \textbf{Level} reproduces Q1.1 by construction, since it is the 10Y.
+The level effect is therefore subject to the same baseline caveat: raw
+$-3.5$\,bp, s.e.\ 5.2. A level factor based on all maturities (first
+principal component) is used in Q2.1.
+\item \textbf{Slope.} After Trump actions the curve \emph{steepens}: $+1.4$\,bp
+over $[-1,+1]$ and $+4.5$\,bp over 30 days, while the level falls. This is a
+\emph{bull steepening}: the front end, anchored to expected policy rates,
+rallies more than the 10Y, which also carries tariff-driven inflation risk and
+a term premium. Unlike the level, the slope is barely affected by the
+baseline ($-1.3$\,bp): the raw steepening is $+3.3$\,bp (s.e.\ 1.9). It is
+partly offset by a flattening in the run-up ($-1.0$\,bp abnormal), so the
+evidence is weak but this is the most event-like pattern in Q1.
+\item \textbf{Curvature} falls after the events ($-3.7$\,bp): the 5Y belly
+rallies more than the average of the 2Y and 10Y wings. This would be
+consistent with cuts priced over the next 2--5 years. However, curvature
+also falls \emph{before} the events (raw $-2.5$\,bp) and after foreign
+responses (raw $-4.5$\,bp). That points to a downward trend in curvature
+during the event periods rather than a reaction to tariff news.
+\item \textbf{All events vs.\ Trump actions.} Level and slope effects are
+weaker when foreign responses are included (post-event slope $+2.0$ vs.\
+$+4.5$\,bp), while curvature is unchanged, consistent with the trend
+interpretation.
 \end{itemize}
 
 %--------------------------------------------------------------------
 \question{Q1.3 --- Market reaction to the targeted countries' responses}
 
-\begin{table}[h]
+\begin{table}[!htbp]
 \centering
 \small
 \begin{tabular}{lrrrrrrr}
 \toprule
-Window (bp) & 3M & 2Y & 5Y & 10Y & 30Y & Slope & Curv. \\
+ & 3M & 2Y & 5Y & 10Y & 30Y & Slope & Curv. \\
 \midrule
-pre $[-30,0]$          & $-2.6$ & $-11.8$ & $-15.3$ & $-14.3$ & $-10.9$ & $-2.4$ & $-4.4$ \\
-announcement $[-1,+1]$ & $+0.1$ & $-1.1$  & $-0.2$  & $+0.7$  & $+0.9$  & $+1.8$ & $0.0$ \\
-post $[0,+30]$         & $-3.2$ & $-2.7$  & $-3.7$  & $-0.6$  & $+1.8$  & $+2.1$ & $-4.1$ \\
+\multicolumn{8}{l}{\emph{Panel A. Abnormal change (assignment methodology), bp}} \\
+\addlinespace[2pt]
+Pre-event $[-30,0]$    & $-2.6$ & $-11.8$ & $-15.3$ & $-14.3$ & $-10.9$ & $-2.4$ & $-4.4$ \\
+Announcement $[-1,+1]$ & $+0.1$ & $-1.1$  & $-0.2$  & $+0.7$  & $+0.9$  & $+1.8$ & $0.0$ \\
+Post-event $[0,+30]$   & $-3.2$ & $-2.7$  & $-3.7$  & $-0.6$  & $+1.8$  & $+2.1$ & $-4.1$ \\
+\addlinespace
+\multicolumn{8}{l}{\emph{Panel B. Raw post-event change, bp}} \\
+\addlinespace[2pt]
+Raw change    & $+4.2$ & $+4.1$ & $+2.2$ & $+4.8$ & $+6.5$ & $+0.6$ & $-4.5$ \\
+\quad (s.e.)  & $(2.3)$ & $(3.7)$ & $(3.8)$ & $(3.8)$ & $(3.7)$ & $(2.2)$ & $(1.0)$ \\
 \bottomrule
 \end{tabular}
-\caption{Foreign responses: abnormal yield change (34 event days at $-30$, 31 at $+30$).}
+\caption{Foreign responses: 34 event days in the pre-event window, 33 in the
+announcement window, 31 in the post-event window.}
+\label{tab:q13}
 \end{table}
 
 \textbf{Discussion.}
 \begin{itemize}[leftmargin=1.2em,nosep]
-\item \textbf{Before} the responses, yields fall by 11--15bp, as before
-Trump actions. This is expected: responses come days after the US measure
-they answer, so the pre-window mostly contains the US action itself.
-\item \textbf{After} the responses, there is almost no further drift
-($-0.6$bp on the 10Y, $+1.8$bp on the 30Y): retaliation seems largely
-anticipated once the US measure is known.
-\item The long end \emph{rises} relative to the front end (slope $+1.8$bp at
-the announcement, $+2.1$bp post). Retaliation hurts US exporters
-(growth-negative) but also raises import prices and threatens foreign demand
-for Treasuries (inflation and term-premium positive); at the long end the
-second channel dominates.
-\item \textbf{Caveat.} Seven response days coincide with a Trump action on the
-same trading day, so the two effects cannot be separated there (fixed in Q2.1).
+\item \textbf{Before the responses} yields fall by 11--15\,bp (2Y to 30Y).
+This is largely mechanical: a response typically comes a few days after the
+US measure it answers, so its pre-event window contains the US action itself.
+In eight cases the two fall on the same trading day.
+\item \textbf{At the announcement} nothing moves beyond noise (at most
+$+0.9$\,bp on yields, $+1.8$\,bp on the slope).
+\item \textbf{After the responses}, the abnormal change is close to zero
+(10Y $-0.6$\,bp). In raw terms, however, yields \emph{rise} by 2--7\,bp, the
+30Y the most ($+6.5$\,bp, s.e.\ 3.7). These rises are absorbed by the rising
+baseline. So ``no abnormal reaction'' means that yields behaved like in an
+average non-event month, not that they were flat.
+\item \textbf{Economic reading.} Retaliation has two opposite effects on US
+yields. It hurts US exporters, which is growth-negative and lowers yields. It
+also raises import prices and threatens foreign demand for Treasuries, which
+pushes up inflation expectations and the term premium. The mild rise of the
+long end relative to the front end (slope $+1.8$\,bp at the announcement)
+suggests that the second channel slightly dominates. The evidence, however,
+is weak and concentrated in 2025 (Q1.4).
 \end{itemize}
 
 %--------------------------------------------------------------------
 \question{Q1.4 --- First vs.\ second mandate}
 
-\begin{figure}[h]
+\begin{figure}[!htbp]
 \centering
 \includegraphics[width=\textwidth]{pl_q14_terms.png}
 \caption{Abnormal change by mandate: first term (2017--20, blue) vs.\ second
 term (2025, orange). Top: Trump actions. Bottom: foreign responses.}
 \end{figure}
 
-\begin{table}[h]
+\begin{table}[!htbp]
 \centering
 \footnotesize
+\setlength{\tabcolsep}{3.5pt}
 \begin{tabular}{lcrrrrcrrrr}
 \toprule
- & & \multicolumn{4}{c}{pre $[-30,0]$ (bp)} & & \multicolumn{4}{c}{post $[0,+30]$ (bp)} \\
+ & & \multicolumn{4}{c}{Pre-event $[-30,0]$, bp} & & \multicolumn{4}{c}{Post-event $[0,+30]$, bp} \\
 \cmidrule{3-6}\cmidrule{8-11}
 Group & $n$ & 2Y & 10Y & 30Y & Slope & & 2Y & 10Y & 30Y & Slope \\
 \midrule
-Trump actions, 1st term      & 18/18 & $-3.4$  & $-9.7$  & $-12.3$ & $-6.3$ & & $-6.7$  & $-6.2$  & $-4.8$  & $+0.5$ \\
-Trump actions, 2nd term      & 14/10 & $-14.7$ & $-9.5$  & $-3.1$  & $+5.2$ & & $-22.4$ & $-11.7$ & $-1.3$  & $+10.7$ \\
-Responses, 1st term          & 22/22 & $-4.1$  & $-12.4$ & $-13.1$ & $-8.3$ & & $+1.7$  & $-0.8$  & $-1.6$  & $-2.5$ \\
-Responses, 2nd term          & 12/9  & $-21.8$ & $-14.7$ & $-5.1$  & $+7.1$ & & $-8.6$  & $+3.0$  & $+11.6$ & $+11.6$ \\
+\multicolumn{11}{l}{\emph{Abnormal change (assignment methodology)}} \\
+Actions, 1st term & 18/18 & $-3.4$  & $-9.7$  & $-12.3$ & $-6.3$ & & $-6.7$  & $-6.2$  & $-4.8$  & $+0.5$ \\
+Actions, 2nd term & 14/10 & $-14.7$ & $-9.5$  & $-3.1$  & $+5.2$ & & $-22.4$ & $-11.7$ & $-1.3$  & $+10.7$ \\
+Responses, 1st term     & 22/22 & $-4.1$  & $-12.4$ & $-13.1$ & $-8.3$ & & $+1.7$  & $-0.8$  & $-1.6$  & $-2.5$ \\
+Responses, 2nd term     & 12/9  & $-21.8$ & $-14.7$ & $-5.1$  & $+7.1$ & & $-8.6$  & $+3.0$  & $+11.6$ & $+11.6$ \\
+\addlinespace
+\multicolumn{11}{l}{\emph{Raw post-event change (s.e.)}} \\
+Actions, 1st term & & & & & & & $-0.7\,(6.7)$ & $-0.7\,(6.8)$ & $+0.8\,(6.1)$ & $0.0\,(2.2)$ \\
+Actions, 2nd term & & & & & & & $-17.9\,(7.9)$ & $-8.7\,(8.5)$ & $+1.2\,(8.2)$ & $+9.2\,(3.0)$ \\
+Responses, 2nd term     & & & & & & & $-4.1\,(7.8)$ & $+6.0\,(7.4)$ & $+14.1\,(7.4)$ & $+10.1\,(4.5)$ \\
 \bottomrule
 \end{tabular}
-\caption{Abnormal yield change by mandate; $n$ $=$ event days used at $-30$/$+30$.}
+\caption{Yield change by mandate. Actions $=$ Trump actions; $n$ $=$ event
+days in the pre-/post-event windows.}
+\label{tab:q14}
 \end{table}
 
-\textbf{Discussion.} The reactions differ markedly.
+\textbf{Discussion.} The two mandates look very different, but for a different
+reason than Panel~A alone suggests.
 \begin{itemize}[leftmargin=1.2em,nosep]
-\item \textbf{First term (2018--19): a parallel, safe-haven rally.} 2Y, 10Y
-and 30Y fall by similar amounts and the slope barely moves. Tariffs were
-targeted (mainly China), inflation was low, and Treasuries behaved as the
-classic safe asset.
-\item \textbf{Second term (2025): a steepening.} After Trump actions the 2Y
-falls by 22bp while the 30Y is unchanged (slope $+10.7$bp); after foreign
-responses the 30Y even \emph{rises} by 11.6bp. The front end prices Fed cuts
-against weaker growth, but the long end no longer rallies: universal tariffs
-are inflationary, US fiscal deficits were widening (One Big Beautiful Bill
-Act), and markets questioned foreign demand for Treasuries. The term premium
-absorbed the shock, and the safe-haven role of the long bond was weaker.
-\item \textbf{Reliability.} The second-term samples are small (10 and 9
-events at $+30$) and concentrated in a few weeks of 2025, so these differences
-are indicative only. Q2.1 tests which of them survive.
+\item \textbf{First term (2018--19): no measurable reaction.} After Trump
+actions the abnormal changes suggest a parallel rally of 5--7\,bp. In raw
+terms, however, the 2Y, 10Y and 30Y are all within 1\,bp of zero (s.e.\
+about 6--7\,bp): the apparent rally is entirely the baseline. The only clear
+first-term feature is a \emph{flattening into the events} (abnormal slope
+$-6.3$\,bp after actions, $-8.3$\,bp after responses). This matches the
+general flattening of the 2018 hiking cycle more than tariff news. Tariffs
+were narrower (mainly China, plus steel and aluminium), inflation was low, and
+the Fed's reaction function dominated the curve.
+\item \textbf{Second term (2025): a steepening.} Here the raw numbers move:
+\begin{itemize}[nosep]
+\item After Trump actions, the 2Y falls by 18\,bp while the 30Y does not
+move, giving a \emph{bull steepening} (slope $+9.2$\,bp, s.e.\ 3.0): the
+front end prices Fed cuts against weaker growth.
+\item After foreign responses, the 30Y \emph{rises} by 14\,bp (slope
+$+10.1$\,bp), a \emph{bear steepening}.
+\end{itemize}
+The long end no longer acted as a safe haven. Universal tariffs are
+inflationary, fiscal concerns were acute (Moody's downgrade in May, the One
+Big Beautiful Bill Act in July), and markets questioned foreign demand for
+Treasuries during the April ``sell America'' episode. The shock was absorbed
+by the term premium rather than by lower long yields.
+\item \textbf{Reliability.} The second-term samples are small: 10 and 9 event
+days in the post-event window. They are also concentrated between February and
+July 2025, so their 30-day windows overlap and represent only a handful of
+independent episodes. The s.e.\ above are therefore too small, and the
+differences between mandates are indicative only. Q2.1 tests which of them
+survive proper inference.
 \end{itemize}
 
 %--------------------------------------------------------------------
